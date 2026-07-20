@@ -1,0 +1,75 @@
+GET http://127.0.0.1:5000/categorias
+
+###
+
+GET http://127.0.0.1:5000/categorias/1
+
+###
+
+POST http://127.0.0.1:5000/categorias
+Content-Type: application/json
+
+{
+    "nome": "Periféricos"
+}
+
+###
+
+PUT http://127.0.0.1:5000/categorias/1
+Content-Type: application/json
+
+{
+    "nome": "Hardware"
+}
+
+###
+
+DELETE http://127.0.0.1:5000/categorias/1
+
+###
+
+GET http://127.0.0.1:5000/produtos
+
+###
+
+GET http://127.0.0.1:5000/produtos/1
+
+###
+
+POST http://127.0.0.1:5000/produtos
+Content-Type: application/json
+
+{
+    "nome": "Mouse Gamer",
+    "preco": 149.90,
+    "estoque": 20,
+    "categoria_id": 1
+}
+
+###
+
+PUT http://127.0.0.1:5000/produtos/1
+Content-Type: application/json
+
+{
+    "nome": "Mouse Gamer RGB",
+    "preco": 169.90,
+    "estoque": 15,
+    "categoria_id": 1
+}
+
+###
+
+DELETE http://127.0.0.1:5000/produtos/1
+
+###
+
+GET http://127.0.0.1:5000/produtos-completo
+
+###
+
+GET http://127.0.0.1:5000/categorias/1/produtos
+
+###
+
+GET http://127.0.0.1:5000/produtos/busca?nome=Mouse
