@@ -13,7 +13,44 @@ def conectar():
     return conn
 
 
+class Produto:
+
+    def __init__(self, nome, preco, estoque, categoria_id):
+        self.__nome = nome
+        self.__preco = preco
+        self.__estoque = estoque
+        self.__categoria_id = categoria_id
+
+    def get_nome(self):
+        return self.__nome
+
+    def get_preco(self):
+        return self.__preco
+
+    def get_estoque(self):
+        return self.__estoque
+
+    def get_categoria_id(self):
+        return self.__categoria_id
+
+    def calcular_preco(self):
+        return self.__preco
+
+
+class ProdutoNormal(Produto):
+
+    def calcular_preco(self):
+        return self.get_preco()
+
+
+class ProdutoPromocao(Produto):
+
+    def calcular_preco(self):
+        return self.get_preco() * 0.90
+
+
 def criar_banco():
+
     conn = conectar()
     cursor = conn.cursor()
 
@@ -43,10 +80,16 @@ def criar_banco():
 
 criar_banco()
 
+
 @app.route("/categorias", methods=["GET"])
 def listar_categorias():
+
     conn = conectar()
-    categorias = conn.execute("SELECT * FROM categorias").fetchall()
+
+    categorias = conn.execute(
+        "SELECT * FROM categorias"
+    ).fetchall()
+
     conn.close()
 
     return jsonify([dict(c) for c in categorias])
@@ -54,15 +97,20 @@ def listar_categorias():
 
 @app.route("/categorias/<int:id>", methods=["GET"])
 def buscar_categoria(id):
+
     conn = conectar()
+
     categoria = conn.execute(
         "SELECT * FROM categorias WHERE id=?",
         (id,)
     ).fetchone()
+
     conn.close()
 
     if categoria is None:
-        return jsonify({"erro": "Categoria não encontrada"}), 404
+        return jsonify({
+            "erro": "Categoria não encontrada"
+        }), 404
 
     return jsonify(dict(categoria))
 
@@ -73,7 +121,9 @@ def criar_categoria():
     dados = request.get_json()
 
     if not dados or "nome" not in dados:
-        return jsonify({"erro": "Nome obrigatório"}), 400
+        return jsonify({
+            "erro": "Nome obrigatório"
+        }), 400
 
     conn = conectar()
 
@@ -88,13 +138,21 @@ def criar_categoria():
 
     conn.close()
 
-    return jsonify({"id": novo_id, "mensagem": "Categoria criada"}), 201
+    return jsonify({
+        "id": novo_id,
+        "mensagem": "Categoria criada"
+    }), 201
 
 
 @app.route("/categorias/<int:id>", methods=["PUT"])
 def atualizar_categoria(id):
 
     dados = request.get_json()
+
+    if not dados or "nome" not in dados:
+        return jsonify({
+            "erro": "Nome obrigatório"
+        }), 400
 
     conn = conectar()
 
@@ -105,7 +163,10 @@ def atualizar_categoria(id):
 
     if existe is None:
         conn.close()
-        return jsonify({"erro": "Categoria não encontrada"}), 404
+
+        return jsonify({
+            "erro": "Categoria não encontrada"
+        }), 404
 
     conn.execute(
         "UPDATE categorias SET nome=? WHERE id=?",
@@ -115,7 +176,9 @@ def atualizar_categoria(id):
     conn.commit()
     conn.close()
 
-    return jsonify({"mensagem": "Categoria atualizada"})
+    return jsonify({
+        "mensagem": "Categoria atualizada"
+    })
 
 
 @app.route("/categorias/<int:id>", methods=["DELETE"])
@@ -132,11 +195,17 @@ def excluir_categoria(id):
 
     if cursor.rowcount == 0:
         conn.close()
-        return jsonify({"erro": "Categoria não encontrada"}), 404
+
+        return jsonify({
+            "erro": "Categoria não encontrada"
+        }), 404
 
     conn.close()
 
-    return jsonify({"mensagem": "Categoria excluída"})
+    return jsonify({
+        "mensagem": "Categoria excluída"
+    })
+
 
 @app.route("/produtos", methods=["GET"])
 def listar_produtos():
@@ -165,7 +234,9 @@ def buscar_produto(id):
     conn.close()
 
     if produto is None:
-        return jsonify({"erro": "Produto não encontrado"}), 404
+        return jsonify({
+            "erro": "Produto não encontrado"
+        }), 404
 
     return jsonify(dict(produto))
 
@@ -175,10 +246,17 @@ def criar_produto():
 
     dados = request.get_json()
 
-    campos = ["nome", "preco", "estoque", "categoria_id"]
+    campos = [
+        "nome",
+        "preco",
+        "estoque",
+        "categoria_id"
+    ]
 
     if not dados or not all(c in dados for c in campos):
-        return jsonify({"erro": "Dados inválidos"}), 400
+        return jsonify({
+            "erro": "Dados inválidos"
+        }), 400
 
     conn = conectar()
 
@@ -189,17 +267,27 @@ def criar_produto():
 
     if categoria is None:
         conn.close()
-        return jsonify({"erro": "Categoria inexistente"}), 404
 
-    cursor = conn.execute("""
-        INSERT INTO produtos
-        (nome,preco,estoque,categoria_id)
-        VALUES(?,?,?,?)
-    """, (
+        return jsonify({
+            "erro": "Categoria inexistente"
+        }), 404
+
+    produto = ProdutoNormal(
         dados["nome"],
         dados["preco"],
         dados["estoque"],
         dados["categoria_id"]
+    )
+
+    cursor = conn.execute("""
+        INSERT INTO produtos
+        (nome, preco, estoque, categoria_id)
+        VALUES (?, ?, ?, ?)
+    """, (
+        produto.get_nome(),
+        produto.calcular_preco(),
+        produto.get_estoque(),
+        produto.get_categoria_id()
     ))
 
     conn.commit()
@@ -208,13 +296,29 @@ def criar_produto():
 
     conn.close()
 
-    return jsonify({"id": novo_id, "mensagem": "Produto criado"}), 201
+    return jsonify({
+        "id": novo_id,
+        "mensagem": "Produto criado",
+        "preco": produto.calcular_preco()
+    }), 201
 
 
 @app.route("/produtos/<int:id>", methods=["PUT"])
 def atualizar_produto(id):
 
     dados = request.get_json()
+
+    campos = [
+        "nome",
+        "preco",
+        "estoque",
+        "categoria_id"
+    ]
+
+    if not dados or not all(c in dados for c in campos):
+        return jsonify({
+            "erro": "Dados inválidos"
+        }), 400
 
     conn = conectar()
 
@@ -225,11 +329,29 @@ def atualizar_produto(id):
 
     if existe is None:
         conn.close()
-        return jsonify({"erro": "Produto não encontrado"}), 404
+
+        return jsonify({
+            "erro": "Produto não encontrado"
+        }), 404
+
+    categoria = conn.execute(
+        "SELECT * FROM categorias WHERE id=?",
+        (dados["categoria_id"],)
+    ).fetchone()
+
+    if categoria is None:
+        conn.close()
+
+        return jsonify({
+            "erro": "Categoria inexistente"
+        }), 404
 
     conn.execute("""
         UPDATE produtos
-        SET nome=?,preco=?,estoque=?,categoria_id=?
+        SET nome=?,
+            preco=?,
+            estoque=?,
+            categoria_id=?
         WHERE id=?
     """, (
         dados["nome"],
@@ -242,7 +364,9 @@ def atualizar_produto(id):
     conn.commit()
     conn.close()
 
-    return jsonify({"mensagem": "Produto atualizado"})
+    return jsonify({
+        "mensagem": "Produto atualizado"
+    })
 
 
 @app.route("/produtos/<int:id>", methods=["DELETE"])
@@ -259,11 +383,16 @@ def excluir_produto(id):
 
     if cursor.rowcount == 0:
         conn.close()
-        return jsonify({"erro": "Produto não encontrado"}), 404
+
+        return jsonify({
+            "erro": "Produto não encontrado"
+        }), 404
 
     conn.close()
 
-    return jsonify({"mensagem": "Produto excluído"})
+    return jsonify({
+        "mensagem": "Produto excluído"
+    })
 
 
 @app.route("/produtos-completo", methods=["GET"])
@@ -287,6 +416,7 @@ def produtos_completo():
 
     return jsonify([dict(p) for p in produtos])
 
+
 @app.route("/categorias/<int:id>/produtos", methods=["GET"])
 def produtos_categoria(id):
 
@@ -301,6 +431,7 @@ def produtos_categoria(id):
     conn.close()
 
     return jsonify([dict(p) for p in produtos])
+
 
 @app.route("/produtos/busca", methods=["GET"])
 def busca_produtos():
