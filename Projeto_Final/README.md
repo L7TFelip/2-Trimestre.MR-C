@@ -1,4 +1,4 @@
-API Loja de Informática
+API Tecnoshopp
 
 API REST desenvolvida em Python com Flask e banco de dados SQLite.
 
